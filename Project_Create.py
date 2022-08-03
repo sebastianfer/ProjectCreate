@@ -1,3 +1,7 @@
+#Written by Sebastian Fernandez
+#Collaborations: Kate Wujciak and Maddie Pero
+
+
 import sys
 import rclpy
 from rclpy.action import ActionClient
@@ -15,8 +19,8 @@ from irobot_create_msgs.msg import WheelVels
 from geometry_msgs.msg import Twist
 from geometry_msgs.msg import Vector3
 
-global max_speed = 0.15
-global threshold = 1000
+max_speed = 0.75
+threshold = 100
 
 class WallFollowActionClient(Node):
     def __init__(self):
@@ -64,9 +68,9 @@ class Obstacles(Node):
         self.angular = Vector3()
 
     def listener_callback(self, msg:IrIntensityVector):
-        self.SPEED(msg)
+        self.DRIVE(msg)
 
-    def SPEED(self, msg):
+    def DRIVE(self, msg):
         val = []
         message = msg.readings
         for i in range(len(message)):
@@ -74,23 +78,45 @@ class Obstacles(Node):
 
         if 0 < max(val) < threshold:
             speed = max_speed/max(val)
+            self.linear.x = float(speed)
+            self.linear.y = float(speed)
+            self.linear.z = float(speed)
+        
+            self.angular.x = float(0.0)
+            self.angular.y = float(0.0)
+            self.angular.z = float(0.0)
+        
+            self.wheels.linear = self.linear
+            self.wheels.angular = self.angular
+            self.wheels_publisher.publish(self.wheels)
+
         elif max(val) >= threshold:
-            speed = 0
+            speed = max_speed/max(val)
+            self.linear.x = float(0)
+            self.linear.y = float(0)
+            self.linear.z = float(0)
+        
+            self.angular.x = float(speed)
+            self.angular.y = float(speed)
+            self.angular.z = float(speed)
+        
+            self.wheels.linear = self.linear
+            self.wheels.angular = self.angular
+            self.wheels_publisher.publish(self.wheels)
+
         else:
             speed = max_speed
-
-        self.linear.x = float(speed)
-        self.linear.y = float(speed)
-        self.linear.z = float(speed)
+            self.linear.x = float(speed)
+            self.linear.y = float(speed)
+            self.linear.z = float(speed)
         
-        self.angular.x = float(0.0)
-        self.angular.y = float(0.0)
-        self.angular.z = float(0.0)
+            self.angular.x = float(0.0)
+            self.angular.y = float(0.0)
+            self.angular.z = float(0.0)
         
-        self.wheels.linear = self.linear
-        self.wheels.angular = self.angular
-        self.wheels_publisher.publish(self.wheels)
-
+            self.wheels.linear = self.linear
+            self.wheels.angular = self.angular
+            self.wheels_publisher.publish(self.wheels)
 
 def main(args=None):
     rclpy.init(args=args)
